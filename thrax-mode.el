@@ -70,7 +70,7 @@
 
 (defvar thrax-font-lock-keywords nil
   "The thrax font lock keywords. This variable is redefined by thrax-refont")
- 
+
 (defun thrax-refont ()
   "Refonting buffer routine"
   (interactive)
@@ -89,14 +89,14 @@
 	(add-to-list
 	 'thrax-font-lock-keywords
 	 `(,exp                 . 'font-lock-keyword-face))))
-    
-  
+
+
   ;; Update font-lock-defaults variable
   (setq font-lock-keywords thrax-font-lock-keywords)
   (font-lock-add-keywords nil '(("^#.+" . font-lock-comment-face)))
-  
+
   ;; Refontify the buffer
-  (font-lock-fontify-buffer))
+  (font-lock-fontify-buffer t))
 
 (defun thrax-comment-dwim (arg)
   "Helper to dwim comment in thrax. ARG correspond to the region to comment"
@@ -113,7 +113,15 @@
   (modify-syntax-entry ?# "< b" thrax-mode-syntax-table)
   (modify-syntax-entry ?\n "> b" thrax-mode-syntax-table)
 
-  ;; -- By default do not color
+  ;; -- Default font locking
+  (setq thrax-font-lock-keywords
+	`((,thrax-defined-fst          . 1)  ;; Assign  \1 match to font-lock-keyword-face
+	  (,thrax-weight               . 'font-lock-constant-face)
+	  (,thrax-single-quoted-string . 'font-lock-doc-face)
+	  (,thrax-range                . 'red)
+	  (,thrax-syntax               . 'font-lock-keyword-face)))
+
+  ;; -- Default deactivation
   (setq thrax-keywords nil)
   (setq thrax-parse-keywords nil)
   (setq thrax-included-keywords nil)
@@ -124,11 +132,11 @@
   (setq-local comment-end "")
 
   ;; -- now fontify
-  (thrax-refont)
+  (setq font-lock-defaults '(thrax-font-lock-keywords))
+  (font-lock-add-keywords nil '(("^#.+" . font-lock-comment-face)))
   )
 
-(setq auto-mode-alist
-      (append '(("\\.grm\\'" . thrax-mode)) auto-mode-alist))
+(add-to-list 'auto-mode-alist '("\\.grm\\'" . thrax-mode))
 
 (provide 'thrax-mode)
 ;;; thrax-mode.el ends here
