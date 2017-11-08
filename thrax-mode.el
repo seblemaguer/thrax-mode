@@ -22,7 +22,7 @@
 ;; limitations under the License.
 ;;
 ;;; Commentary:
-;
+					;
 ;; Definition of Thrax mode for Emacs.
 ;; Assuming you have installed this in /usr/local/share/thrax/utils then put the
 ;; following line in your .emacs:
@@ -53,37 +53,50 @@
    'words)
   "Variable containing the regexp matching the built in functions of thrax")
 
-(defvar thrax-syntax
-  "[\]\[=@:|*+\?\"(),;{}-]"
+(defvar thrax-syntax "[\]\[=@:|*+\?\"(),;{}-]"
   "Variable containing the regexp defining the available operators in thrax")
 
-(defvar thrax-single-quoted-string
-  "'[^']*'"
+(defvar thrax-single-quoted-string "'[^']*'"
   "Variable containing the regexp defining the single quoted string")
 
-(defvar thrax-weight
-  "<[^<>]*>"
+(defvar thrax-weight "<[^<>]*>"
   "Variable containing the regexp defining the weight")
 
-(defvar thrax-range
-  "[0-9]+,[0-9]+"
+(defvar thrax-range "[0-9]+,[0-9]+"
   "Variable containing the regexp defining a range in thrax")
 
-(defvar thrax-defined-fst
-  "\\([^ \n]+\\)[ \n]*="
+(defvar thrax-defined-fst "\\([^ \n]+\\)[ \n]*="
   "Every string not including spaces that is followed by optional spaces and an equals sign is a user-defined fst")
 
-(defvar thrax-font-lock-keywords
-  `( (,thrax-defined-fst . 1)  ;; Assign  \1 match to font-lock-keyword-face
-    (,thrax-weight . 'font-lock-constant-face)
-    (,thrax-single-quoted-string . font-lock-doc-face)
-    (,thrax-range . 'red)
-    (,thrax-keywords . font-lock-keyword-face)
-    (,thrax-parse-keywords . font-lock-keyword-face)
-    (,thrax-included-keywords . 'font-lock-keyword-face)
-    (,thrax-built-in-functions . 'font-lock-builtin-face)
-    (,thrax-syntax . 'font-lock-keyword-face)
-    ))
+(defvar thrax-font-lock-keywords nil
+  "The thrax font lock keywords. This variable is redefined by thrax-refont")
+ 
+(defun thrax-refont ()
+  "Refonting buffer routine"
+  (interactive)
+
+  ;; Always defined part
+  (setq thrax-font-lock-keywords
+	`((,thrax-defined-fst          . 1)  ;; Assign  \1 match to font-lock-keyword-face
+	  (,thrax-weight               . 'font-lock-constant-face)
+	  (,thrax-single-quoted-string . 'font-lock-doc-face)
+	  (,thrax-range                . 'red)
+	  (,thrax-syntax               . 'font-lock-keyword-face)))
+
+  ;; Optionnal fontify part
+  (dolist (exp `(,thrax-keywords ,thrax-parse-keywords ,thrax-included-keywords ,thrax-built-in-functions))
+    (when exp
+	(add-to-list
+	 'thrax-font-lock-keywords
+	 `(,exp                 . 'font-lock-keyword-face))))
+    
+  
+  ;; Update font-lock-defaults variable
+  (setq font-lock-keywords thrax-font-lock-keywords)
+  (font-lock-add-keywords nil '(("^#.+" . font-lock-comment-face)))
+  
+  ;; Refontify the buffer
+  (font-lock-fontify-buffer))
 
 (defun thrax-comment-dwim (arg)
   "Helper to dwim comment in thrax. ARG correspond to the region to comment"
@@ -96,24 +109,23 @@
   "Thrax mode"
   "Major mode for editing OpenGrm Thrax grammars"
 
-  (setq-local font-lock-defaults '(thrax-font-lock-keywords))
   (define-key thrax-mode-map [remap comment-dwim] 'thrax-comment-dwim)
   (modify-syntax-entry ?# "< b" thrax-mode-syntax-table)
   (modify-syntax-entry ?\n "> b" thrax-mode-syntax-table)
 
-
-  ;; By default do not color
+  ;; -- By default do not color
   (setq thrax-keywords nil)
   (setq thrax-parse-keywords nil)
   (setq thrax-included-keywords nil)
-  (setq thrax-built-in-functions nil)
+  (setq thrax-built-in-keywords nil)
 
-  ;; Comment part
+  ;; -- Comment part
   (setq-local comment-start "#")
   (setq-local comment-end "")
-  (font-lock-add-keywords nil '(("^#.+" . font-lock-comment-face)))
 
-)
+  ;; -- now fontify
+  (thrax-refont)
+  )
 
 (setq auto-mode-alist
       (append '(("\\.grm\\'" . thrax-mode)) auto-mode-alist))
